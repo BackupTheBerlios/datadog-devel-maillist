@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Datadog-devel] Time/PCRs in transport streams
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/datadog-devel/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:datadog-devel%40lists.berlios.de?Subject=Re%3A%20%5BDatadog-devel%5D%20Time/PCRs%20in%20transport%20streams&In-Reply-To=%3C200504192322.44959.adq_dvb%40lidskialf.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000008.html">
+   <LINK REL="Next"  HREF="000007.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Datadog-devel] Time/PCRs in transport streams</H1>
+    <B>Andrew de Quincey</B> 
+    <A HREF="mailto:datadog-devel%40lists.berlios.de?Subject=Re%3A%20%5BDatadog-devel%5D%20Time/PCRs%20in%20transport%20streams&In-Reply-To=%3C200504192322.44959.adq_dvb%40lidskialf.net%3E"
+       TITLE="[Datadog-devel] Time/PCRs in transport streams">adq_dvb at lidskialf.net
+       </A><BR>
+    <I>Wed Apr 20 00:22:44 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000008.html">[Datadog-devel] Time/PCRs in transport streams
+</A></li>
+        <LI>Next message: <A HREF="000007.html">[Datadog-devel] Datadog picture
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9">[ date ]</a>
+              <a href="thread.html#9">[ thread ]</a>
+              <a href="subject.html#9">[ subject ]</a>
+              <a href="author.html#9">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> &gt; &gt; For our puposes, we'll have to scan the whole stream and determine the
+</I>&gt;<i> &gt; &gt; PCRs when the stream is loaded as part of the background process. They
+</I>&gt;<i> &gt; &gt; aren't necessarily regular, and the design of these streams is not
+</I>&gt;<i> &gt; &gt; really for what we're doing - its for TV broadcast, so we need to do
+</I>&gt;<i> &gt; &gt; extra processing to get the info we need.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; So given my understanding the algorithm is something like this. Assume
+</I>&gt;<i> &gt; for the time being that all packets in all streams have already been
+</I>&gt;<i> &gt; defined and loaded. You now make a linear pass through them. When you
+</I>&gt;<i> &gt; encounter a PCR you propagate the timestamp up to the stream which
+</I>&gt;<i> &gt; owns the clock, associated with the appropriate byte address. Now you
+</I>&gt;<i> &gt; can make a second pass in which you fill times for all packets by
+</I>&gt;<i> &gt; climbing up to the clock-owning stream and interpolating from byte
+</I>&gt;<i> &gt; address to timestamp.
+</I>&gt;<i>
+</I>&gt;<i> Yeah I think so. I think its something we'll have to check empirically as
+</I>&gt;<i> well though.
+</I>
+I think we'll have to use some form of interpolation for them in the real 
+system unfortunately. A quick calculation for a 10Gb transport stream shows 
+it would use:
+
+((10*1024*1024*1024)/188)*5 == 114227850
+
+That's 100Mb just for the timestamps - assuming we used 5 bytes per stamp 
+(they're 33 bits long BTW) :)
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000008.html">[Datadog-devel] Time/PCRs in transport streams
+</A></li>
+	<LI>Next message: <A HREF="000007.html">[Datadog-devel] Datadog picture
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#9">[ date ]</a>
+              <a href="thread.html#9">[ thread ]</a>
+              <a href="subject.html#9">[ subject ]</a>
+              <a href="author.html#9">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/datadog-devel">More information about the Datadog-devel
+mailing list</a><br>
+</body></html>

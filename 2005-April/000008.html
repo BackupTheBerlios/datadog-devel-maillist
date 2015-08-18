@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Datadog-devel] Time/PCRs in transport streams
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/datadog-devel/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:datadog-devel%40lists.berlios.de?Subject=Re%3A%20%5BDatadog-devel%5D%20Time/PCRs%20in%20transport%20streams&In-Reply-To=%3C200504192310.04471.adq%40lidskialf.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000006.html">
+   <LINK REL="Next"  HREF="000009.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Datadog-devel] Time/PCRs in transport streams</H1>
+    <B>Andrew de Quincey</B> 
+    <A HREF="mailto:datadog-devel%40lists.berlios.de?Subject=Re%3A%20%5BDatadog-devel%5D%20Time/PCRs%20in%20transport%20streams&In-Reply-To=%3C200504192310.04471.adq%40lidskialf.net%3E"
+       TITLE="[Datadog-devel] Time/PCRs in transport streams">adq at lidskialf.net
+       </A><BR>
+    <I>Wed Apr 20 00:10:04 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000006.html">[Datadog-devel] Time/PCRs in transport streams
+</A></li>
+        <LI>Next message: <A HREF="000009.html">[Datadog-devel] Time/PCRs in transport streams
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8">[ date ]</a>
+              <a href="thread.html#8">[ thread ]</a>
+              <a href="subject.html#8">[ subject ]</a>
+              <a href="author.html#8">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>&gt;<i> &gt; So to tell the time at an arbitrary byte position in the stream, you find
+</I>&gt;<i> &gt; out the two nearest PCRs on either side, and interpolate between them.
+</I>&gt;<i>
+</I>&gt;<i> This may be a silly question. But would I be right in assuming that
+</I>&gt;<i> there's a convention that only start-of-packet bytes are used in time
+</I>&gt;<i> interpolation, or something along those lines? If a packet contains,
+</I>&gt;<i> for example, some MPEG video data I assume you'd want to consider all
+</I>&gt;<i> that data as belonging to the same point on the timeline.
+</I>
+The standard defines explictly where the time is measured from somewhere - I 
+can't remember the details.
+
+&gt;<i> &gt; As streams can contain a variable bitrate, you unfortunately can't just
+</I>&gt;<i> &gt; find the first few PCRs and average it. However the bitrate between any
+</I>&gt;<i> &gt; two ADJACENT PCRs in the SAME stream is guaranteed to be constant - so
+</I>&gt;<i> &gt; the interpolation is dead easy.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; It starts to get a bit MORE confusing when you have (say) a DVB-T stream.
+</I>&gt;<i> &gt; In that, there are multiple programs contained in the one stream (e.g.
+</I>&gt;<i> &gt; BBC1, BBC2, BBC3, etc) - you have multiple video/audio/subtitle streams
+</I>&gt;<i> &gt; all multiplexed together.
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; Each *program* has its own clock. I'm not sure if the PCR is a global
+</I>&gt;<i> &gt; value across the entire transport stream, or if it is program specific.
+</I>&gt;<i> &gt; Something we shall find out I suspect though :)
+</I>&gt;<i>
+</I>&gt;<i> The way I'd like to think of it is that certain streams have clocks.
+</I>&gt;<i> Stream A's clock is driven by packets in A, or by packets from a
+</I>&gt;<i> descendant stream B multiplexed within A. Some other descendant stream
+</I>&gt;<i> C can inherit the clock from A. This is neat because time information
+</I>&gt;<i> flows up and down the containment hierarchy in a fairly simple way.
+</I>&gt;<i>
+</I>&gt;<i> But the clock-per-programme thing you mentioned suggests the
+</I>&gt;<i> possibility that you can have multiple clocks attached to a stream A,
+</I>&gt;<i> each connected to a subset of A's descendants. This seems a lot less
+</I>&gt;<i> neat so I hope it can be described as in the previous paragraph. It
+</I>&gt;<i> might be possible to introduce a concept of virtual streams to group
+</I>&gt;<i> together sibling streams which share a clock.
+</I>
+yeah - virtual streams best expresses it. For DVB, you have loads of single 
+streams (A+V+subs+control) all packed together into the one transport stream. 
+The &quot;virtual&quot; streams are defined by the Program Map Tables - they say which 
+single streams belong to which virtual streams (or TV programmes as they will 
+be known to the end user).
+
+&gt;<i> &gt; For our puposes, we'll have to scan the whole stream and determine the
+</I>&gt;<i> &gt; PCRs when the stream is loaded as part of the background process. They
+</I>&gt;<i> &gt; aren't necessarily regular, and the design of these streams is not really
+</I>&gt;<i> &gt; for what we're doing - its for TV broadcast, so we need to do extra
+</I>&gt;<i> &gt; processing to get the info we need.
+</I>&gt;<i>
+</I>&gt;<i> So given my understanding the algorithm is something like this. Assume
+</I>&gt;<i> for the time being that all packets in all streams have already been
+</I>&gt;<i> defined and loaded. You now make a linear pass through them. When you
+</I>&gt;<i> encounter a PCR you propagate the timestamp up to the stream which
+</I>&gt;<i> owns the clock, associated with the appropriate byte address. Now you
+</I>&gt;<i> can make a second pass in which you fill times for all packets by
+</I>&gt;<i> climbing up to the clock-owning stream and interpolating from byte
+</I>&gt;<i> address to timestamp.
+</I>
+Yeah I think so. I think its something we'll have to check empirically as well 
+though.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000006.html">[Datadog-devel] Time/PCRs in transport streams
+</A></li>
+	<LI>Next message: <A HREF="000009.html">[Datadog-devel] Time/PCRs in transport streams
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8">[ date ]</a>
+              <a href="thread.html#8">[ thread ]</a>
+              <a href="subject.html#8">[ subject ]</a>
+              <a href="author.html#8">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/datadog-devel">More information about the Datadog-devel
+mailing list</a><br>
+</body></html>

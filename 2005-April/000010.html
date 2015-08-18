@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Datadog-devel] tooltip during dragging bookmark
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/datadog-devel/2005-April/index.html" >
+   <LINK REL="made" HREF="mailto:datadog-devel%40lists.berlios.de?Subject=Re%3A%20%5BDatadog-devel%5D%20tooltip%20during%20dragging%20bookmark&In-Reply-To=%3C200504210118.13977.adq_dvb%40lidskialf.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000007.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Datadog-devel] tooltip during dragging bookmark</H1>
+    <B>Andrew de Quincey</B> 
+    <A HREF="mailto:datadog-devel%40lists.berlios.de?Subject=Re%3A%20%5BDatadog-devel%5D%20tooltip%20during%20dragging%20bookmark&In-Reply-To=%3C200504210118.13977.adq_dvb%40lidskialf.net%3E"
+       TITLE="[Datadog-devel] tooltip during dragging bookmark">adq_dvb at lidskialf.net
+       </A><BR>
+    <I>Thu Apr 21 02:18:13 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000007.html">[Datadog-devel] Datadog picture
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi, been looking at this - including your suggestion of using Popup.
+
+Problem is Popup is a bit of a problem.
+
+(a) You can't move them once you create them - you have to hide and show a new 
+one 
+
+(b) Masses of extra code has to be written to duplicate TooltipManager - I 
+mean it does loads of stuff, like fitting the tooltip into the window etc 
+etc.
+
+I found an easy way to make it do what I want though - I overrode 
+processMouseEvent() in StreamsViewerColumnHeader and just don't propagate the 
+events anywhere I don't want 'em to go - seems to work fine!
+
+Does this set off your nasty hack detector? I reckon its better than rewriting 
+TooltipManager.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000007.html">[Datadog-devel] Datadog picture
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/datadog-devel">More information about the Datadog-devel
+mailing list</a><br>
+</body></html>

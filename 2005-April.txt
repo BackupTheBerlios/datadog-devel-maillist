@@ -1,0 +1,353 @@
+From dominic.seymour at gmail.com  Tue Apr 19 00:26:59 2005
+From: dominic.seymour at gmail.com (Dominic Seymour)
+Date: Mon, 18 Apr 2005 23:26:59 +0100
+Subject: [Datadog-devel] Test
+Message-ID: <c6c5afaa05041815267b703f1a@mail.gmail.com>
+
+First post.
+
+
+From adq at lidskialf.net  Tue Apr 19 11:36:45 2005
+From: adq at lidskialf.net (Andrew de Quincey)
+Date: Tue, 19 Apr 2005 10:36:45 +0100
+Subject: [Datadog-devel] test2
+Message-ID: <200504191036.45196.adq@lidskialf.net>
+
+Second test message
+
+
+From dominic.seymour at gmail.com  Tue Apr 19 15:26:07 2005
+From: dominic.seymour at gmail.com (Dominic Seymour)
+Date: Tue, 19 Apr 2005 14:26:07 +0100
+Subject: [Datadog-devel] test2
+In-Reply-To: <200504191036.45196.adq@lidskialf.net>
+References: <200504191036.45196.adq@lidskialf.net>
+Message-ID: <c6c5afaa05041906264aa4364d@mail.gmail.com>
+
+Another test from Dominic.
+
+On 4/19/05, Andrew de Quincey <adq at lidskialf.net> wrote:
+> Second test message
+> _______________________________________________
+> Datadog-devel mailing list
+> Datadog-devel at lists.berlios.de
+> http://lists.berlios.de/mailman/listinfo/datadog-devel
+
+
+From adq_dvb at lidskialf.net  Tue Apr 19 15:43:28 2005
+From: adq_dvb at lidskialf.net (Andrew de Quincey)
+Date: Tue, 19 Apr 2005 14:43:28 +0100
+Subject: [Datadog-devel] Reorganised
+Message-ID: <200504191443.28582.adq_dvb@lidskialf.net>
+
+OK, datadog is now reformatted to 4 space indentation. Lets just say "use the 
+java coding style" from now on. Except no tab chars (not sure if those are a 
+part of the java coding style anyway, but I don't want them in the code).
+
+Also, reorganised the tree to dominic's suggested layout (src/java, 
+build/classes etc).
+
+Assuming the mailing list is now working, lets use it.
+
+
+From dominic.seymour at gmail.com  Tue Apr 19 18:46:44 2005
+From: dominic.seymour at gmail.com (Dominic Seymour)
+Date: Tue, 19 Apr 2005 17:46:44 +0100
+Subject: [Datadog-devel] Reorganised
+In-Reply-To: <200504191443.28582.adq_dvb@lidskialf.net>
+References: <200504191443.28582.adq_dvb@lidskialf.net>
+Message-ID: <c6c5afaa0504190946111c1459@mail.gmail.com>
+
+On 4/19/05, Andrew de Quincey <adq_dvb at lidskialf.net> wrote:
+> OK, datadog is now reformatted to 4 space indentation. Lets just say "use the
+> java coding style" from now on. Except no tab chars (not sure if those are a
+> part of the java coding style anyway, but I don't want them in the code).
+
+Sure, I don't like tabs either. Sun's source is full of them!
+
+> Also, reorganised the tree to dominic's suggested layout (src/java,
+> build/classes etc).
+
+I have added the libraries to the lib/ directory and changed the
+Eclipse .classpath file accordingly. I also created a simple Ant
+build.xml which does the usual things like compiling, building javadoc
+etc. It can build simple distribution zips too.
+
+In Eclipse portability of library source references is a problem.
+Currently they can be based on paths within the workspace or absolute
+paths. Absolute paths are no good for obvious reasons. An approach
+I've taken in the past is to check source JARs/ZIPs for libraries into
+a special "libs" project then refer to this. We could do something
+like that if necessary.
+
+D.
+
+
+From adq_dvb at lidskialf.net  Tue Apr 19 21:22:19 2005
+From: adq_dvb at lidskialf.net (Andrew de Quincey)
+Date: Tue, 19 Apr 2005 20:22:19 +0100
+Subject: [Datadog-devel] Time/PCRs in transport streams
+Message-ID: <200504192022.19759.adq_dvb@lidskialf.net>
+
+You asked about it....
+
+Basically every now and then, there is a special packet containing a timestamp 
+called a PCR - a Program Clock Reference. The encoder and the decoder share a 
+clock - these timestamps allows the decoder to synchronise its clock to the 
+encoder's one.
+
+The PCR is piggybacked onto one of the existing streams (e.g. in a TV program 
+it is really common to add it to the video stream - look in the TS packet 
+header in ISO 13181-1 - theres a flag saying whether its there or not).
+
+So to tell the time at an arbitrary byte position in the stream, you find out 
+the two nearest PCRs on either side, and interpolate between them.
+
+As streams can contain a variable bitrate, you unfortunately can't just find 
+the first few PCRs and average it. However the bitrate between any two 
+ADJACENT PCRs in the SAME stream is guaranteed to be constant - so the 
+interpolation is dead easy.
+
+It starts to get a bit MORE confusing when you have (say) a DVB-T stream. In 
+that, there are multiple programs contained in the one stream (e.g. BBC1, 
+BBC2, BBC3, etc) - you have multiple video/audio/subtitle streams all 
+multiplexed together. 
+
+Each *program* has its own clock. I'm not sure if the PCR is a global value 
+across the entire transport stream, or if it is program specific. Something 
+we shall find out I suspect though :)
+
+For our puposes, we'll have to scan the whole stream and determine the PCRs 
+when the stream is loaded as part of the background process. They aren't 
+necessarily regular, and the design of these streams is not really for what 
+we're doing - its for TV broadcast, so we need to do extra processing to get 
+the info we need.
+
+
+From dominic.seymour at gmail.com  Tue Apr 19 23:11:07 2005
+From: dominic.seymour at gmail.com (Dominic Seymour)
+Date: Tue, 19 Apr 2005 22:11:07 +0100
+Subject: [Datadog-devel] Time/PCRs in transport streams
+In-Reply-To: <200504192022.19759.adq_dvb@lidskialf.net>
+References: <200504192022.19759.adq_dvb@lidskialf.net>
+Message-ID: <c6c5afaa0504191411cde0adc@mail.gmail.com>
+
+On 4/19/05, Andrew de Quincey <adq_dvb at lidskialf.net> wrote:
+> You asked about it....
+> 
+> Basically every now and then, there is a special packet containing a timestamp
+> called a PCR - a Program Clock Reference. The encoder and the decoder share a
+> clock - these timestamps allows the decoder to synchronise its clock to the
+> encoder's one.
+> 
+> The PCR is piggybacked onto one of the existing streams (e.g. in a TV program
+> it is really common to add it to the video stream - look in the TS packet
+> header in ISO 13181-1 - theres a flag saying whether its there or not).
+
+All seems sensible.
+ 
+> So to tell the time at an arbitrary byte position in the stream, you find out
+> the two nearest PCRs on either side, and interpolate between them.
+
+This may be a silly question. But would I be right in assuming that
+there's a convention that only start-of-packet bytes are used in time
+interpolation, or something along those lines? If a packet contains,
+for example, some MPEG video data I assume you'd want to consider all
+that data as belonging to the same point on the timeline.
+
+> As streams can contain a variable bitrate, you unfortunately can't just find
+> the first few PCRs and average it. However the bitrate between any two
+> ADJACENT PCRs in the SAME stream is guaranteed to be constant - so the
+> interpolation is dead easy.
+> 
+> It starts to get a bit MORE confusing when you have (say) a DVB-T stream. In
+> that, there are multiple programs contained in the one stream (e.g. BBC1,
+> BBC2, BBC3, etc) - you have multiple video/audio/subtitle streams all
+> multiplexed together.
+> 
+> Each *program* has its own clock. I'm not sure if the PCR is a global value
+> across the entire transport stream, or if it is program specific. Something
+> we shall find out I suspect though :)
+
+The way I'd like to think of it is that certain streams have clocks.
+Stream A's clock is driven by packets in A, or by packets from a
+descendant stream B multiplexed within A. Some other descendant stream
+C can inherit the clock from A. This is neat because time information
+flows up and down the containment hierarchy in a fairly simple way.
+
+But the clock-per-programme thing you mentioned suggests the
+possibility that you can have multiple clocks attached to a stream A,
+each connected to a subset of A's descendants. This seems a lot less
+neat so I hope it can be described as in the previous paragraph. It
+might be possible to introduce a concept of virtual streams to group
+together sibling streams which share a clock.
+ 
+> For our puposes, we'll have to scan the whole stream and determine the PCRs
+> when the stream is loaded as part of the background process. They aren't
+> necessarily regular, and the design of these streams is not really for what
+> we're doing - its for TV broadcast, so we need to do extra processing to get
+> the info we need.
+
+So given my understanding the algorithm is something like this. Assume
+for the time being that all packets in all streams have already been
+defined and loaded. You now make a linear pass through them. When you
+encounter a PCR you propagate the timestamp up to the stream which
+owns the clock, associated with the appropriate byte address. Now you
+can make a second pass in which you fill times for all packets by
+climbing up to the clock-owning stream and interpolating from byte
+address to timestamp.
+
+Dominic.
+
+
+From dominic.seymour at gmail.com  Tue Apr 19 23:59:40 2005
+From: dominic.seymour at gmail.com (Dominic Seymour)
+Date: Tue, 19 Apr 2005 22:59:40 +0100
+Subject: [Datadog-devel] Datadog picture
+Message-ID: <c6c5afaa05041914597ded9964@mail.gmail.com>
+
+Here is a picture of a data dog :) Bear in mind this is a first
+attempt. It could be made to look at a stream of data. For added
+"coolness" the data could scroll and the dogs eyes could track it :)
+D.
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: datadog.png
+Type: image/png
+Size: 3350 bytes
+Desc: not available
+URL: <https://lists.berlios.de/pipermail/datadog-devel/attachments/20050419/c30bd11e/attachment.png>
+
+From adq at lidskialf.net  Wed Apr 20 00:10:04 2005
+From: adq at lidskialf.net (Andrew de Quincey)
+Date: Tue, 19 Apr 2005 23:10:04 +0100
+Subject: [Datadog-devel] Time/PCRs in transport streams
+In-Reply-To: <c6c5afaa0504191411cde0adc@mail.gmail.com>
+References: <200504192022.19759.adq_dvb@lidskialf.net> <c6c5afaa0504191411cde0adc@mail.gmail.com>
+Message-ID: <200504192310.04471.adq@lidskialf.net>
+
+> > So to tell the time at an arbitrary byte position in the stream, you find
+> > out the two nearest PCRs on either side, and interpolate between them.
+>
+> This may be a silly question. But would I be right in assuming that
+> there's a convention that only start-of-packet bytes are used in time
+> interpolation, or something along those lines? If a packet contains,
+> for example, some MPEG video data I assume you'd want to consider all
+> that data as belonging to the same point on the timeline.
+
+The standard defines explictly where the time is measured from somewhere - I 
+can't remember the details.
+
+> > As streams can contain a variable bitrate, you unfortunately can't just
+> > find the first few PCRs and average it. However the bitrate between any
+> > two ADJACENT PCRs in the SAME stream is guaranteed to be constant - so
+> > the interpolation is dead easy.
+> >
+> > It starts to get a bit MORE confusing when you have (say) a DVB-T stream.
+> > In that, there are multiple programs contained in the one stream (e.g.
+> > BBC1, BBC2, BBC3, etc) - you have multiple video/audio/subtitle streams
+> > all multiplexed together.
+> >
+> > Each *program* has its own clock. I'm not sure if the PCR is a global
+> > value across the entire transport stream, or if it is program specific.
+> > Something we shall find out I suspect though :)
+>
+> The way I'd like to think of it is that certain streams have clocks.
+> Stream A's clock is driven by packets in A, or by packets from a
+> descendant stream B multiplexed within A. Some other descendant stream
+> C can inherit the clock from A. This is neat because time information
+> flows up and down the containment hierarchy in a fairly simple way.
+>
+> But the clock-per-programme thing you mentioned suggests the
+> possibility that you can have multiple clocks attached to a stream A,
+> each connected to a subset of A's descendants. This seems a lot less
+> neat so I hope it can be described as in the previous paragraph. It
+> might be possible to introduce a concept of virtual streams to group
+> together sibling streams which share a clock.
+
+yeah - virtual streams best expresses it. For DVB, you have loads of single 
+streams (A+V+subs+control) all packed together into the one transport stream. 
+The "virtual" streams are defined by the Program Map Tables - they say which 
+single streams belong to which virtual streams (or TV programmes as they will 
+be known to the end user).
+
+> > For our puposes, we'll have to scan the whole stream and determine the
+> > PCRs when the stream is loaded as part of the background process. They
+> > aren't necessarily regular, and the design of these streams is not really
+> > for what we're doing - its for TV broadcast, so we need to do extra
+> > processing to get the info we need.
+>
+> So given my understanding the algorithm is something like this. Assume
+> for the time being that all packets in all streams have already been
+> defined and loaded. You now make a linear pass through them. When you
+> encounter a PCR you propagate the timestamp up to the stream which
+> owns the clock, associated with the appropriate byte address. Now you
+> can make a second pass in which you fill times for all packets by
+> climbing up to the clock-owning stream and interpolating from byte
+> address to timestamp.
+
+Yeah I think so. I think its something we'll have to check empirically as well 
+though.
+
+
+From adq_dvb at lidskialf.net  Wed Apr 20 00:22:44 2005
+From: adq_dvb at lidskialf.net (Andrew de Quincey)
+Date: Tue, 19 Apr 2005 23:22:44 +0100
+Subject: [Datadog-devel] Time/PCRs in transport streams
+In-Reply-To: <200504192310.04471.adq@lidskialf.net>
+References: <200504192022.19759.adq_dvb@lidskialf.net> <c6c5afaa0504191411cde0adc@mail.gmail.com> <200504192310.04471.adq@lidskialf.net>
+Message-ID: <200504192322.44959.adq_dvb@lidskialf.net>
+
+> > > For our puposes, we'll have to scan the whole stream and determine the
+> > > PCRs when the stream is loaded as part of the background process. They
+> > > aren't necessarily regular, and the design of these streams is not
+> > > really for what we're doing - its for TV broadcast, so we need to do
+> > > extra processing to get the info we need.
+> >
+> > So given my understanding the algorithm is something like this. Assume
+> > for the time being that all packets in all streams have already been
+> > defined and loaded. You now make a linear pass through them. When you
+> > encounter a PCR you propagate the timestamp up to the stream which
+> > owns the clock, associated with the appropriate byte address. Now you
+> > can make a second pass in which you fill times for all packets by
+> > climbing up to the clock-owning stream and interpolating from byte
+> > address to timestamp.
+>
+> Yeah I think so. I think its something we'll have to check empirically as
+> well though.
+
+I think we'll have to use some form of interpolation for them in the real 
+system unfortunately. A quick calculation for a 10Gb transport stream shows 
+it would use:
+
+((10*1024*1024*1024)/188)*5 == 114227850
+
+That's 100Mb just for the timestamps - assuming we used 5 bytes per stamp 
+(they're 33 bits long BTW) :)
+
+
+From adq_dvb at lidskialf.net  Thu Apr 21 02:18:13 2005
+From: adq_dvb at lidskialf.net (Andrew de Quincey)
+Date: Thu, 21 Apr 2005 01:18:13 +0100
+Subject: [Datadog-devel] tooltip during dragging bookmark
+Message-ID: <200504210118.13977.adq_dvb@lidskialf.net>
+
+Hi, been looking at this - including your suggestion of using Popup.
+
+Problem is Popup is a bit of a problem.
+
+(a) You can't move them once you create them - you have to hide and show a new 
+one 
+
+(b) Masses of extra code has to be written to duplicate TooltipManager - I 
+mean it does loads of stuff, like fitting the tooltip into the window etc 
+etc.
+
+I found an easy way to make it do what I want though - I overrode 
+processMouseEvent() in StreamsViewerColumnHeader and just don't propagate the 
+events anywhere I don't want 'em to go - seems to work fine!
+
+Does this set off your nasty hack detector? I reckon its better than rewriting 
+TooltipManager.
+
+
